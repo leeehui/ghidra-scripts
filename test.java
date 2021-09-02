@@ -12,6 +12,7 @@ import org.python.modules.itertools.ifilter;
 
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.AddressSet;
+import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Instruction;
@@ -40,6 +41,9 @@ public class test extends GhidraScript {
 		// 8. branch to local Label
 		// 9. branch to local functions
 		// 10.branch to external functions
+
+		// TODO:
+		// adrp x1 0x8002a000;  add x1 x1 #0x150; ldr x6 [x1, #0x10]
 
 		printf("hello, ghidra! this is a test");
 		//currentProgram.
@@ -73,32 +77,30 @@ public class test extends GhidraScript {
 			opcodeStr = instruct.getMnemonicString();
 			oprandsNum = instruct.getNumOperands();
 			
-			/*
-			printf("instruction addr: " + instruct.getAddress().toString() + "  opcode: " + opcodeStr + " oprandsNum:" + oprandsNum);
-			if (opcodeStr.equals("ldr") || opcodeStr.equals("adrp") || opcodeStr.equals("adr")) {
-				for (int i = 0; i < oprandsNum; i++) {
-					//printf("%d ", instruct.getOperandType(i));
-					printf(instruct.getDefaultOperandRepresentation(i));
-				}
-			}
-			*/
-
 			// construct the oprand string, that is useful for generating assembly file
 			String oprandStr = " ";
 			for (int i = 0; i < oprandsNum; i++) {
 				oprandStr += instruct.getDefaultOperandRepresentation(i);
 				oprandStr += " ";
 			}
+			printf("instruction addr: " + instruct.getAddress().toString() + "  " + opcodeStr + oprandStr + " oprandsNum:" + oprandsNum);
+
 
 			// Q: what is MnemonicReference ?
 			Reference [] mRef = instruct.getMnemonicReferences();
 			if (mRef.length > 0) {
 				for (int i = 0; i < mRef.length; i++) {
 					if (mRef[i].isMnemonicReference()) {
-						printf("instruction addr: " + instruct.getAddress().toString() + "  opcode: " + opcodeStr + " oprandsNum:" + oprandsNum);
 						println("isMnemonicReference == true");
 						break;
 					}
+				}
+			}
+
+			if (opcodeStr.equals("ldr") || opcodeStr.equals("adrp") || opcodeStr.equals("adr")) {
+				for (int i = 0; i < oprandsNum; i++) {
+					//printf(instruct.getDefaultOperandRepresentation(i));
+
 				}
 			}
 
@@ -108,23 +110,23 @@ public class test extends GhidraScript {
 			// Note: Not every instructing has References!
 			Reference [] fromRef = instruct.getReferencesFrom();
 			if (fromRef.length > 0) {
-				printf("instruction addr: " + instruct.getAddress().toString() + "  " + opcodeStr + oprandStr + " oprandsNum:" + oprandsNum);
 				String output = "	";
 				for (int i = 0; i < fromRef.length; i++) {
 					int opIdx = fromRef[i].getOperandIndex();
 					String opStr = instruct.getDefaultOperandRepresentation(opIdx);
 					output += opStr;
 					output += " ";
-					if (fromRef[i].isOperandReference()) {
+					
+					if (fromRef[i].isOperandReference()) {  // seems always true
 						output += "isOperandReference, ";
 					}
-					if (fromRef[i].isMemoryReference()) {
+					if (fromRef[i].isMemoryReference()) {   // local memory ?
 						output += "isMemoryReference, ";
 					} 
-					if (fromRef[i].isExternalReference()) {
+					if (fromRef[i].isExternalReference()) { // imported reference
 						output += "isExternalReference, ";
 					}
-					if (fromRef[i].isOffsetReference()) {
+					if (fromRef[i].isOffsetReference()) {   // ? 
 						output += "isOffsetReference, ";
 					}
 					if (fromRef[i].isRegisterReference()) {
